@@ -29,7 +29,6 @@
     "css-loader": "^0.27.3",
     "express": "^4.15.2",
     "file-loader": "^0.10.1",
-    "image-webpack-loader": "^3.2.0",
     "isomorphic-fetch": "^2.2.1",
     "node-sass": "^4.5.0",
     "proxy-middleware": "^0.15.0",
@@ -40,6 +39,10 @@
     "webpack": "^2.2.1",
     "webpack-dev-middleware": "^1.10.1",
     "webpack-dev-server": "^2.4.2",
-    "webpack-hot-middleware": "^2.17.1"
+    "webpack-hot-middleware": "^2.17.1",
+    "worker-loader": "^0.8.0"
+  },
+  "dependencies": {
+    "freelancer": "^0.1.7"
   }
 }
