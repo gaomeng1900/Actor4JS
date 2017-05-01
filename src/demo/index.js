@@ -69,16 +69,14 @@ import {createFromFunction, createFromURL, createFromFactory} from "../thread"
 //
 // window.evalFunction
 
-import { glob } from "../decorators"
-
-import Actor from "../Actor"
+import ActorRef from "../ActorRef"
 import Msg from "../Msg"
 
 ///////////////
 // excamples //
 ///////////////
 
-class Task0 extends Actor {
+class Task0 extends ActorRef {
     receive(msg) {
         switch (msg.type) {
             case "add":
@@ -90,23 +88,46 @@ class Task0 extends Actor {
                 console.log("#task0: I'm multing...", msg.data[0] * msg.data[1])
                 break
 
+            case 'spawn':
+                let childActorRef = this.spawn("TaskChild")
+                console.log(childActorRef)
+                break
+
             default:
                 this.noMatch()
         }
     }
 }
+Task0.register()
+
+class TaskChild extends ActorRef {
+    receive(msg) {
+        switch (msg.type) {
+            case "sub":
+                console.log("#task0: I'm adding...", msg.data[0] + msg.data[1])
+                // let c = 999999; let d = []; while (c--) { d.push(Math.random()) }
+                break
+
+            case "div":
+                console.log("#task0: I'm multing...", msg.data[0] * msg.data[1])
+                break
+
+            default:
+                this.noMatch()
+        }
+    }
+}
+TaskChild.register()
+
 
 let task0 = new Task0()
 window.task0 = task0
-// let task00 = new Task0()
-
-let str = task0.receive.toString()
-// console.log(str)
 
 const msg = new Msg("add", [3, 5])
 let c = 1
 while (c--) {
-    task0.worker.postMessage(msg)
-    task0.worker.postMessage(new Msg("mult", [3, 5]))
+    task0.send(msg)
+    task0.send(new Msg("mult", [3, 5]))
 }
-// task0.receive(msg)
+
+task0.send(new Msg('spawn'))

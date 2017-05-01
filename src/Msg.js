@@ -5,5 +5,10 @@ export default class Msg {
         this.type = type
         this.data = data
         this.id = uuid()
+
+        this.birthTime = new Date().getTime()
+
+        this.target
+        this.sender
     }
 }
