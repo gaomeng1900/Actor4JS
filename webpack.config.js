@@ -14,6 +14,7 @@ module.exports = {
     // @NOTE 使用绝对地址来避免潜在问题
     entry: {
         index: [path.resolve("./src/demo/index.js"), 'webpack-hot-middleware/client?reload=true'] // 热重载中间件
+        // demo: [path.resolve("./src/demo/demo.js"), 'webpack-hot-middleware/client?reload=true'] // 热重载中间件
     },
     output: {
         path: path.resolve("./build"),
