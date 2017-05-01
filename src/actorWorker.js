@@ -3,27 +3,21 @@
  */
 
 import uuid from "uuid"
-import ActorCloned from "./ActorCloned"
+import ActorCore from "./ActorCore"
 
-const id = uuid()
-
-let actor = {receive: () => { console.warn("no act defined!") }}
+let actorCore = {receive: () => { console.warn("undefined!") }}
 
 onmessage = (msgEvent) => {
     const msg = msgEvent.data
     // console.log(msg)
     switch (msg.type) {
         case "__init_actor__":
-            actor = new ActorCloned(msg.data)
-            console.log(`#actorWorker: I'm worker for ${actor.id}, ready to go.`)
-            break
-
-        case "__define_child__":
-            actor = new ActorCloned(msg.data)
+            actorCore = new ActorCore(msg.data.id, msg.data.receive)
+            console.log(`#actorWorker: I'm worker for ${actorCore.id}, ready to go.`)
             break
 
         default:
-            actor.receive(msg)
+            actorCore.receive(msg)
 
     }
 }

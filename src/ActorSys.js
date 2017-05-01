@@ -1,7 +1,6 @@
 import uuid from "uuid"
-const W = require("worker-loader!./actorWorker.js")
 
-const G = this || self
+const G =  self
 
 class ActorSys {
     constructor() {
@@ -27,32 +26,71 @@ class ActorSys {
         }
         this.activeActors[actor.id] = actor
 
-        actor.worker.onmessage = (msgEvent) => {
+        actor.onmessage = (msgEvent) => {
             let msg = msgEvent.data
             switch (msg.type) {
                 case "__spawn_child_actor__":
-                    this.createActor(msg.data.actorClassName)
+                    this.createActor(msg)
                     break
+                case "__transpond__":
+                    this.send(msg.data)
+                    break
+
                 default:
                     return
             }
         }
+
+        // 以免异步延迟??
+        // let i = this.mailbox.length
+        // while (i--) {
+        //     if (this.mailbox[i].target === actor.id) {
+        //         actor.postMessage(msg)
+        //     }
+        // }
     }
 
-    createActor(actorClassName) {
-        // TODO: check if registered
-        let actor = new this.definedActors[actorClassName]()
-        // this.addActor(actor)
-        // return null
+    // createActor(actorClassName, id, parentId) {
+    //     // TODO: check if registered
+    //     let actor = new this.definedActors[actorClassName](id, parentId)
+    //     // this.addActor(actor)
+    //     // return null
+    // }
+
+    createActor(msg) {
+        this.activeActors[msg.sender].children.push(msg.data.childId)
+        let generation = this.activeActors[msg.sender].generation + 1
+        new this.definedActors[msg.data.actorClassName](
+            msg.data.childId,
+            msg.sender,
+            generation
+        )
     }
 
     send(msg) {
+        if (msg.type === "__transpond__") {
+            msg = msg.data
+        }
         // 如果是active的actor, 则直接发送
         if (this.activeActors[msg.target]) {
-            this.activeActors[msg.target].worker.postMessage(msg)
+            this.activeActors[msg.target].postMessage(msg)
         } else {
             this.mailbox.push(msg)
         }
+    }
+
+    print() {
+        // actor tree
+        console.log("====================================")
+        Object.keys(this.activeActors).forEach(key => {
+            let actor = this.activeActors[key]
+            if (actor.generation) {
+                console.log(actor.parentId,"<-", actor.id,  actor.generation)
+            } else {
+                console.log(actor.id, actor.generation)
+            }
+        })
+        console.log("====================================")
     }
 }
 

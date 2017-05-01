@@ -1,42 +1,38 @@
 import uuid from "uuid"
-import * as thread from "./thread"
-import { glob } from "./decorators"
-import { enumerable } from 'core-decorators'
-
-import ACTOR_SYS from "./ActorSys"
 import Msg from "./Msg"
 const W = require("worker-loader!./actorWorker.js")
 
-const G = window || this
-
 export default class Actor {
-    constructor(_receive) {
-        this.id = uuid()
-        this.cloned = false
+    constructor(id, receive, parentId, generation = 0) {
+        this.id = id
+        this.parentId = parentId
+        this.generation = generation
+        // this.receive = new Function("msg", `(${receive}).bind(this)(msg)`)
+        this.receive = receive
+        this.children = []
 
-        this.receive = _receive
+        // worker.postMessage(new Msg("__init_actor__", this))
+        // this.worker = worker // 放到前面会导致无法clone
 
+        // 创建一个Worker
         let worker = new W()
+        // 初始化Worker中的core
         worker.postMessage(new Msg("__init_actor__", this))
         this.worker = worker // 放到前面会导致无法clone
-
-        this.children = {}
-
-        ACTOR_SYS.addActor(this)
+        this.active = true
     }
 
-    spawn(actorClassName) {
-        console.log(actorClassName)
-        let childId = uuid()
-        ACTOR_SYS.createActor(actorClassName, childId)
+
+    postMessage(msg) {
+        this.worker.postMessage(msg)
     }
 
-    // TODO
-    defineChild() {}
+    terminate() {
+        this.worker.terminate()
+        this.active = false
+    }
 
-    defineChildren() {}
-
-    noMatch() {
-        console.warn("noMatch")
+    set onmessage(fn) {
+        this.worker.onmessage = fn
     }
 }
