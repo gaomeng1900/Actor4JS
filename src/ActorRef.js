@@ -25,13 +25,12 @@ export default class ActorRef {
             return msg
         }
 
-        // 3. 快速发送接口, 转接到sys上
+        // 3. 给自己发信息, (依然转接到sys上)
         this.send = (...props) => {
             let msg = new Msg(...props)
             msg.target = this.id
             ACTOR_SYS.send(msg)
         }
-
     }
 
     static register() {

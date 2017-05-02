@@ -20,7 +20,7 @@ export default class Msg {
                 G.__ACTOR_SYS__.send(msg)
             }
         }
-        console.log(G, postMessage);
+        // console.log(G, postMessage);
 
         if (this.target) {
             postMessage(new Msg("__transpond__", this))

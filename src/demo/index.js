@@ -79,19 +79,23 @@ class Task0 extends ActorRef {
     receive(msg) {
         switch (msg.type) {
             case "add":
-                // console.log("#task0: I'm adding...", msg.data[0] + msg.data[1])
+                console.log("#task0: adding...", msg.data[0] + msg.data[1])
                 break
 
             case "mult":
-                // console.log("#task0: I'm multing...", msg.data[0] * msg.data[1])
+                console.log("#task0: multing...", msg.data[0] * msg.data[1])
                 break
 
             case 'spawn':
                 let childActorId = this.spawn("Task0")
                 if (msg.data < 3) {
                     this.msg("spawn", msg.data+1, childActorId).send()
+                    this.msg("add", [3,9]).to(childActorId)
+                } else {
+                    let childActorId = this.spawn("Task1")
+                    this.msg("sub", [3,9]).to(childActorId)
+                    this.msg("subb", [3,9]).to(childActorId)
                 }
-                // this.msg("add", [3,9]).to(childActorId)
                 break
 
             default:
@@ -101,15 +105,15 @@ class Task0 extends ActorRef {
 }
 Task0.register()
 
-class TaskChild extends ActorRef {
+class Task1 extends ActorRef {
     receive(msg) {
         switch (msg.type) {
             case "sub":
-                console.log("#task0: I'm adding...", msg.data[0] - msg.data[1])
+                console.log("#task1: subing...", msg.data[0] - msg.data[1])
                 break
 
             case "div":
-                console.log("#task0: I'm multing...", msg.data[0] / msg.data[1])
+                console.log("#task1: diving...", msg.data[0] / msg.data[1])
                 break
 
             default:
@@ -117,17 +121,17 @@ class TaskChild extends ActorRef {
         }
     }
 }
-TaskChild.register()
+Task1.register()
 
 
-let task0 = new Task0()
-window.task0 = task0
+let task0Ref = new Task0()
+window.task0Ref = task0Ref
 
-task0.send('spawn', 0)
+task0Ref.send('spawn', 0)
 
 
-let c = 100000
+let c = 1
 while (c--) {
-    task0.send("add", [3, 5])
-    task0.send("mult", [3, 5])
+    task0Ref.send("add", [3, 5])
+    task0Ref.send("mult", [3, 5])
 }

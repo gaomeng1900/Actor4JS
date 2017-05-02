@@ -20,6 +20,8 @@ class ActorSys {
         this.definedActors[actorClass.name] = actorClass
     }
 
+    // 把一个actors加入活跃actors中
+    // 直接被ActorsRef的构造函数调用, 以保证每一个actors都被加入系统
     addActor(actor) {
         if (this.activeActors[actor.id]) {
             console.warn("re added", actor.id)
@@ -67,11 +69,17 @@ class ActorSys {
         )
     }
 
+    // 所有Msg都必须发送到这里
+    // 无论是主线程还是Worker线程
     send(msg) {
+        // 转发型信息
         if (msg.type === "__transpond__") {
+            console.log(msg)
             msg = msg.data
         }
-        // 如果是active的actor, 则直接发送
+
+        // 如果是active的actor, 则直接发送(推到其本地信箱)
+        // 否则放到全局信箱里
         if (this.activeActors[msg.target]) {
             this.activeActors[msg.target].postMessage(msg)
         } else {
