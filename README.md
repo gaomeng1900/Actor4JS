@@ -77,4 +77,10 @@ initState(){
 }
 ```
 
+- actor之间的操作全部通过actorRef进行
+- actor之间没有直接的调用关系, 全部走信息通信
+
+- 信息的信道即信息类型
+- 不同信道交给不同的程序处理
+
 http://jasonqu.github.io/akka-doc-cn/2.3.6/scala/book/chapter3/01_actors.html
