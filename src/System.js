@@ -23,7 +23,6 @@ class ActorSys {
 
     /**
      * actor之间(以及和root之间)转发信息
-     * 所有的msg都需要经过这里, 在这里隐藏掉线程之间的区别
      * @method forward
      * @param  {[type]} a
      * @param  {[type]} b
@@ -31,7 +30,7 @@ class ActorSys {
      */
     forward(a, b, msg) {}
 
-    
+
 }
 
 G.__ACTOR_SYS__ || (G.__ACTOR_SYS__ = new ActorSys())
