@@ -33,6 +33,9 @@ export default class ActorRef {
      * @return {Promise}
      */
     ask(msg, timeout) {
-        return this.makePromise()
+        return this.makePromise(
+            "_" + Math.random(),
+            timeout
+        )
     }
 }
