@@ -34,6 +34,8 @@ class ActorSys {
         this.characters = {}
         // actor信息
         this.actors = {}
+        // ask等待的回复
+        this.promises
 
         console.log("ActorSystem inited")
 
@@ -80,8 +82,11 @@ class ActorSys {
      */
     actorOf(className, actorName) {
         // 创建
-        this.createActor(className, actorName)
-        return new ActorRef(actorName, "__root__")
+        this.createActor(className, actorName, "__root__")
+        return new ActorRef(
+            actorName, "__root__", 
+            this.makePromise.bind(this)
+        )
     }
 
     /**
@@ -92,7 +97,7 @@ class ActorSys {
      * @param  {String} className
      * @param  {String} actorName
      */
-    createActor(className, actorName) {
+    createActor(className, actorName, parent) {
         // 检查是否定义
         let character = this.characters[className]
         if (!character) {console.error("className undefined")}
@@ -103,15 +108,19 @@ class ActorSys {
         if (this.pointer > this.pool - 1) { this.pointer = 0 }
         // 向其发送创建指令
         this.postMessage({
-            __channel__: "create_actor",
-            __worker__: workerIndex,
+            channel: "create_actor",
+            worker: workerIndex,
+            sender: "__sys__",
+            // receiver: "",
+            // session: "",
             msg: {
                 name: actorName,
+                parent: parent,
                 ...character,
             }
         })
         // 录入信息(用于信息路由)
-        this.actors[actorName] = {workerIndex}
+        this.actors[actorName] = {workerIndex, parent}
     }
 
     /**
@@ -124,29 +133,36 @@ class ActorSys {
      * 处理所有Env发来的信息
      * 选择下面的某个方法处理该信息
      * @method onmessage
-     * @param  {*}    msg 结构化信息
+     * @param  {*}    _msg 结构化信息
      */
-    onmessage(msg) {
-        switch (msg.__channel__) {
+    onmessage(_msg) {
+        switch (_msg.channel) {
             case "create_actor":
-                this.hCreateActor(msg)
+                // 需要sys处理的特殊信道
+                this.hCreateActor(_msg)
                 break
             default:
-                this.hForward(msg)
+                if (_msg.receiver === "__sys__") {
+                    // 返回给用户的普通信息
+                    this.fulfillPromise(_msg)
+                } else {
+                    // 普通信道以及不需要sys处理的特殊信道
+                    this.hForward(_msg)
+                }
         }
     }
 
     /**
      * 发送信息,直接操作Worker.postMessage
      * @method postMessage
-     * @param  {*} msg
+     * @param  {*} _msg
      */
-    postMessage(msg) {
+    postMessage(_msg) {
         // 路由
-        let workerIndex = msg.__worker__ ||
-                          this.actors[msg.receiver].workerIndex
+        let workerIndex = _msg.worker ||
+                          this.actors[_msg.receiver].workerIndex
         // 发送
-        this.workers[workerIndex].postMessage(msg)
+        this.workers[workerIndex].postMessage(_msg)
     }
 
     // END 信息层模块 ↑
@@ -156,16 +172,49 @@ class ActorSys {
     /**
      * handler: actor之间转发信息
      * @method forward
-     * @param  {*} msg
+     * @param  {*} _msg
      */
-    hForward(msg) {}
+    hForward(_msg) {
+        // 忽略信道，信道由Env层进行路由
+        this.postMessage(_msg)
+    }
 
     /**
      * handler: 创建子actor
      * @method hCreateActor
-     * @param  {*} msg
+     * @param  {*} _msg
      */
-    hCreateActor(msg) {}
+    hCreateActor(_msg) {
+        let msg = _msg.msg
+        this.createActor(msg.className, msg.actorName, msg.sender)
+    }
+
+    // actorRef中的promise需要在这里管理
+    // TODO: 应该是Env的工作
+
+    /**
+     * 在actorRef中生成一个Promise返回给用户
+     * 并登记会话，等待回复
+     * @param  {[type]} sessionID
+     * @return {[type]}          
+     */
+    makePromise(sessionID, timeout) {
+        let promise = new Promise((resolve, reject) => {
+            // 将resolve放入外部
+            // 如果及时返回，resolve被调用，reject将会失效
+            // 如果reject先被调用，resolve将会失效
+            this.promises[sessionID] = (msg) => resolve(msg)
+            setTimeout(reject("timeout"), timeout)
+        })
+        return promise
+    }
+
+    fulfillPromise(_msg) {
+        let sessionID = _msg.sessionID
+        let resolve = this.promises[sessionID]
+        if (resolve) {resolve(_msg.msg)}
+        delete this.promises[sessionID]
+    }
 }
 
 // G.__ACTOR_SYS__ || (G.__ACTOR_SYS__ = new ActorSys())

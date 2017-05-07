@@ -4,7 +4,7 @@
  */
 
 export default class Actor {
-    constructor(env) {
+    constructor(character, env) {
         this.env = env // 该类的所有接口不可调用env以外命名域的对象
     }
 
@@ -14,7 +14,7 @@ export default class Actor {
      * @core 用于接受所有正常信道的信息
      * @method receive
      */
-    receive() {
+    receive(msg, sender) {
         // this <- 当前的actor上下文, 仅能访问指定的几个接口和状态(bind({}))
         // this.state <- 可以直接访问的自身状态
         // this.actorOf() <- 创建子actor

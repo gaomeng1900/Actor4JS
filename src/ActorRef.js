@@ -3,9 +3,11 @@
  */
 
 export default class ActorRef {
-    constructor(name, owner) {
+    constructor(name, owner, makePromise) {
         this.name = name
         this.owner = owner
+        // NOTE: 可能导致this指向问题
+        this.makePromise = makePromise
     }
 
     /**
@@ -31,6 +33,6 @@ export default class ActorRef {
      * @return {Promise}
      */
     ask(msg, timeout) {
-        // return new Promise()
+        return this.makePromise()
     }
 }
