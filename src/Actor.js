@@ -42,7 +42,7 @@ export default class Actor {
      * @method tell
      * @param  {*} msg
      */
-    tell(msg) {}
+    // tell(msg) {}
 
     /**
      * 发送请求并等待回复
@@ -55,9 +55,7 @@ export default class Actor {
      * @param  {[type]} timeout
      * @return {Promise}
      */
-    ask(msg, timeout) {
-        // return new Promise()
-    }
+    // ask(msg, timeout) { // return new Promise() }
 
     /**
      * 创建子actor
