@@ -18,9 +18,20 @@ export default class ActorRef {
      * @ref 调用环境层接口, 讲msg送入通信层
      * @core 禁止调用
      * @method tell
-     * @param  {*} msg
+     * @param {*} msg
+     * @param {String} sessionID 如果有的话就reply, 没有就普通tell
      */
-    tell(msg) {}
+    tell(msg, sessionID) {
+        this.sendMsg({
+            sender: this.owner,
+            receiver: this.name,
+            chanel: "normal",
+            // 如果有
+            sessionState: sessionID ? "response" : null,
+            sessionID,
+            msg,
+        })
+    }
 
     /**
      * 发送请求并等待回复
@@ -34,9 +45,15 @@ export default class ActorRef {
      * @return {Promise}
      */
     ask(msg, timeout) {
-        return this.makePromise(
-            "_" + Math.random(),
-            timeout
-        )
+        let sessionID = "_" + Math.random()
+        this.sendMsg({
+            sender: this.owner,
+            receiver: this.name,
+            chanel: "normal",
+            sessionState: "request",
+            sessionID,
+            msg,
+        })
+        return this.makePromise( sessionID, timeout )
     }
 }

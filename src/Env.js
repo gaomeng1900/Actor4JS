@@ -73,6 +73,11 @@ export default class Env {
                     console.error("no such actor here")
                     return
                 }
+                // 对此环境下发起的ask的回复
+                if (_msg.sessionState === "response") {
+                    this.fulfillPromise(_msg)
+                    return
+                }
                 // NOTE: 这里是直接带着信道信息层传入的
                 // 因为sender信息可能用得到
                 // TODO: 如果有更好的方式传入sender
@@ -92,8 +97,11 @@ export default class Env {
      * @param  {String} sender
      * @param  {String} receiver
      * @param  {String} chanel
+     * @NOTE: 代码同步到system.js
      */
-    sendMsg(msg, sender, receiver, chanel) {}
+    sendMsg(msg, sender, receiver, chanel) {
+        postMessage({ sender, receiver, chanel, msg })
+    }
 
     // 信息层模块 ↑
 
@@ -105,6 +113,7 @@ export default class Env {
      * 并登记会话，等待回复
      * @param  {[type]} sessionID
      * @return {[type]}
+     * @NOTE: 代码同步到system.js
      */
     makePromise(sessionID, timeout) {
         let promise = new Promise((resolve, reject) => {
@@ -117,10 +126,11 @@ export default class Env {
         return promise
     }
 
+    // @NOTE: 代码同步到system.js
     fulfillPromise(_msg) {
         let sessionID = _msg.sessionID
         let resolve = this.promises[sessionID]
-        if (resolve) {resolve(_msg.msg)}
+        if (resolve) {resolve(_msg)}
         delete this.promises[sessionID]
     }
 }

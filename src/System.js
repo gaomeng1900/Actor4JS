@@ -211,9 +211,10 @@ class ActorSys {
     }
 
     fulfillPromise(_msg) {
+        if (_msg.sessionState !== "response") {console.error("wrong sessionState: sys主线程暂时不受理询问")}
         let sessionID = _msg.sessionID
         let resolve = this.promises[sessionID]
-        if (resolve) {resolve(_msg.msg)}
+        if (resolve) {resolve(_msg)}
         delete this.promises[sessionID]
     }
 
@@ -228,7 +229,9 @@ class ActorSys {
      * @param  {String} receiver
      * @param  {String} chanel
      */
-    sendMsg(msg, sender, receiver, chanel) {}
+    sendMsg(msg, sender, receiver, chanel) {
+        this.hForward({ msg, sender, receiver, chanel })
+    }
 }
 
 // G.__ACTOR_SYS__ || (G.__ACTOR_SYS__ = new ActorSys())
