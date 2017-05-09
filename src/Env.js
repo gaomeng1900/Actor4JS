@@ -1,6 +1,8 @@
 /**
  * actor运行环境
  * actor不可调用此环境以外的接口
+ * NOTE: 该函数无论如何不能崩溃,
+ *       不然下面的所有actor都会失联而且没法自我恢复
  */
 
 import Actor from "./Actor"
@@ -27,7 +29,11 @@ export default class Env {
      * @param  {Object}    character actor的关键描述
      */
     createActor(character) {
-        this.actors[character.name] = new Actor(character, this)
+        try {
+            this.actors[character.name] = new Actor(character, this)
+        } catch (e) {
+            console.error(e)
+        }
     }
 
     /**

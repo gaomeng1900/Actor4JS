@@ -6,6 +6,47 @@
 export default class Actor {
     constructor(character, env) {
         this.env = env // 该类的所有接口不可调用env以外命名域的对象
+        let c = character
+
+        if (!c.name) {throw new Error("lack of key:name")}
+        if (!c.parent) {throw new Error("lack of key:parent")}
+        if (!c.receive) {throw new Error("lack of key:receive")}
+
+        this.name = c.name
+        this.state = {}
+        this.parent = parent
+        this.children = []
+
+        // 构造一个加的this传给用户编写的代码, 以隔离环境
+        this.safeContex = {
+            get state()              {return this.state},
+            set state(newState)      {this.state = newState},
+            get parent()             {return this.parent},
+            get children()           {return this.children},
+            get actorOf()            {return this.actorOf},
+            get supervisorStrategy() {return this.supervisorStrategy},
+            get name()               {return this.name}
+        }
+
+        // 构造核心接口
+        this.receive = new Function(
+            "msg",
+            `(${c.receive}).bind(this.safeContex)(msg)`
+        )
+        // 可选的接口
+        if (c.preStart) {
+            this.preStart = new Function(
+                `(${c.preStart}).bind(this.safeContex)`
+            )
+        }
+        if (c.supervisorStrategy) {
+            this.supervisorStrategy = new Function(
+                "ecp",
+                `(${c.supervisorStrategy}).bind(this.safeContex)(ecp)`
+            )
+        }
+        // 运行初始化脚本
+        this.preStart()
     }
 
     /**
@@ -76,11 +117,12 @@ export default class Actor {
      * @core 调用环境层接口, 向ref发心跳
      * @method watch
      * @param  {ActorRef} actorRef
+     * @废除: 一个actor只有一个parent
      */
-    watch(actorRef) {
+    // watch(actorRef) {
         // 定期向actorRef.ask心跳检测
         // 同时向子actor注册监管者, 让子actor向自己发送监管信息
-    }
+    // }
 
     /**
      * 该actor的监控信息需要发给谁
@@ -88,12 +130,27 @@ export default class Actor {
      * @core 调用环境层接口, 向ref发心跳
      * @method registerSupervisor
      * @param  {ActorRef} actorRef
+     * @废除: 一个actor只有一个parent
      */
-    registerSupervisor(actorRef) {}
+    // registerSupervisor(actorRef) {}
+
+    /**
+     * 轮询
+     * 观察自己的父子组件是否正常运转
+     * 如果父组件失联, 则关闭自己
+     * 如果子组件失联, 则调用supervisorStrategy处理
+     * @BOOKMARK
+     * @method polling
+     */
+    polling() {
+
+    }
 
     /**
      * 定义对子actor的监控策略
      * 收到子actor的监控信息之后应该如何处理
+     * @TODO: 子组件都能发送哪些类型的exception
+     * @TODO: 如何关闭或重启子组件
      * @method supervisorStrategy
      * @param  {Object}           exception
      */
