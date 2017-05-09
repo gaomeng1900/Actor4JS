@@ -136,15 +136,24 @@ export default class Actor {
 
     /**
      * 轮询
-     * 观察自己的父子组件是否正常运转
-     * 如果父组件失联, 则关闭自己
-     * 如果子组件失联, 则调用supervisorStrategy处理
-     * @BOOKMARK
+     * 观察自己的父子actor是否正常运转
+     * 每次轮询时衰减父子actor的生命体征
+     * 同时向父子actor发心跳
+     * 如果父actor失联, 则关闭自己
+     * 如果子actor失联, 则调用supervisorStrategy处理
      * @method polling
+     * @废除: 目前的actor不应该非自然死亡,
      */
-    polling() {
+    // polling() {}
 
-    }
+    /**
+     * 收到心跳, 恢复该actor的生命体征
+     * @method heartbeat
+     * @param  {[type]}  actorName
+     * @return [type]
+     * @废除: 目前的actor不应该非自然死亡,
+     */
+    // heartbeat(actorName) {}
 
     /**
      * 定义对子actor的监控策略
@@ -154,10 +163,13 @@ export default class Actor {
      * @method supervisorStrategy
      * @param  {Object}           exception
      */
-    supervisorStrategy(exception) {
-        exception = {
-            type: ErrorType, // "MIA" <- missing in action, "dying" <- 即将停止
-            sender: actorRef
+    supervisorStrategy(_msg) {
+        _msg = {
+            msg: {
+                type: ErrorType, // "MIA" <- missing in action, "dying" <- 即将停止
+                message: e.message,
+            }
+            sender: _msg.receiver
         }
     }
 

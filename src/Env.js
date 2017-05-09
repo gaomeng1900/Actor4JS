@@ -71,6 +71,38 @@ export default class Env {
             case "create_actor": // sys要求在本环境下创建一个actor
                 this.createActor(_msg.msg)
                 break
+            case "supervisor": // 调用supervisorStrategy
+                // 第二层路由
+                let receiver = this.actors[_msg.receiver]
+                if (!receiver) {
+                    // TODO: 搞个死信信箱？
+                    console.error("no such actor here")
+                    return
+                }
+                // 把sender换成一个ref, 用于方便的返回信息
+                // @BOOKMARK
+                _msg.sender = this.makeActorRef(_msg.sender, _msg.receiver)
+                try {
+                    receiver.supervisorStrategy(_msg)
+                } catch (e) {
+                    // 如果supervisorStrategy直接抛出了错误,
+                    // 该错误递归地交给父组件
+                    let supervisorMsg = {
+                        type: e.name,
+                        message: e.message,
+                        sender: receiver.name,
+                        receiver: receiver.parent
+                    }
+                    // TODO: 怎么交给父组件
+                    // @BOOKMARK
+                    this.sendMsg(
+                        supervisorMsg,
+                        receiver.name,
+                        receiver.parent,
+                        "supervisor",
+                    )
+                }
+                break
             default: // actor之间的常规信息沟通（用户上下文）
                 // 第二层路由
                 let receiver = this.actors[_msg.receiver]
@@ -88,7 +120,25 @@ export default class Env {
                 // 因为sender信息可能用得到
                 // TODO: 如果有更好的方式传入sender
                 //       就可以剥离掉信道信息等不希望用户看到的信息
-                receiver.receive(_msg)
+                try {
+                    receiver.receive(_msg)
+                } catch (e) {
+                    // 如果receive直接抛出了错误, 该错误应该交给父组件
+                    let supervisorMsg = {
+                        type: e.name,
+                        message: e.message,
+                        sender: receiver.name,
+                        receiver: receiver.parent
+                    }
+                    // TODO: 怎么交给父组件
+                    // @BOOKMARK
+                    this.sendMsg(
+                        supervisorMsg,
+                        receiver.name,
+                        receiver.parent,
+                        "supervisor",
+                    )
+                }
 
         }
     }
