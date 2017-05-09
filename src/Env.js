@@ -14,6 +14,8 @@ export default class Env {
 
         // 这里面放的是actor实例本身的引用，唯一能真正接触到actor的地方
         this.actors = {}
+        // ask等待的回复
+        this.promises = {}
 
         console.log("Env inited")
     }
@@ -38,7 +40,11 @@ export default class Env {
      * @return {ActorRef}
      */
     makeActorRef(name, owner) {
-        return new ActorRef(name, owner)
+        return new ActorRef(
+            name, owner,
+            this.makePromise.bind(this),
+            this.sendMsg.bind(this)
+        )
     }
 
     /**
@@ -60,6 +66,7 @@ export default class Env {
                 this.createActor(_msg.msg)
                 break
             default: // actor之间的常规信息沟通（用户上下文）
+                // 第二层路由
                 let receiver = this.actors[_msg.receiver]
                 if (!receiver) {
                     // TODO: 搞个死信信箱？
@@ -68,7 +75,8 @@ export default class Env {
                 }
                 // NOTE: 这里是直接带着信道信息层传入的
                 // 因为sender信息可能用得到
-                // TODO: 需要有更好的方式传入sender而非这样
+                // TODO: 如果有更好的方式传入sender
+                //       就可以剥离掉信道信息等不希望用户看到的信息
                 receiver.receive(_msg)
 
         }
@@ -86,4 +94,33 @@ export default class Env {
      * @param  {String} chanel
      */
     sendMsg(msg, sender, receiver, chanel) {}
+
+    // 信息层模块 ↑
+
+    // actorRef中的promise需要在这里管理
+    // TODO: 应该是Env的工作
+
+    /**
+     * 在actorRef中生成一个Promise返回给用户
+     * 并登记会话，等待回复
+     * @param  {[type]} sessionID
+     * @return {[type]}
+     */
+    makePromise(sessionID, timeout) {
+        let promise = new Promise((resolve, reject) => {
+            // 将resolve放入外部
+            // 如果及时返回，resolve被调用，reject将会失效
+            // 如果reject先被调用，resolve将会失效
+            this.promises[sessionID] = (msg) => resolve(msg)
+            setTimeout(reject("timeout"), timeout)
+        })
+        return promise
+    }
+
+    fulfillPromise(_msg) {
+        let sessionID = _msg.sessionID
+        let resolve = this.promises[sessionID]
+        if (resolve) {resolve(_msg.msg)}
+        delete this.promises[sessionID]
+    }
 }

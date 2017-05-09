@@ -32,10 +32,10 @@ class ActorSys {
 
         // actor定义信息
         this.characters = {}
-        // actor信息
+        // actor信息(而非引用)
         this.actors = {}
         // ask等待的回复
-        this.promises
+        this.promises = {}
 
         console.log("ActorSystem inited")
 
@@ -84,8 +84,9 @@ class ActorSys {
         // 创建
         this.createActor(className, actorName, "__root__")
         return new ActorRef(
-            actorName, "__root__", 
-            this.makePromise.bind(this)
+            actorName, "__root__",
+            this.makePromise.bind(this),
+            this.sendMsg.bind(this)
         )
     }
 
@@ -158,7 +159,7 @@ class ActorSys {
      * @param  {*} _msg
      */
     postMessage(_msg) {
-        // 路由
+        // 第一层路由
         let workerIndex = _msg.worker ||
                           this.actors[_msg.receiver].workerIndex
         // 发送
@@ -189,14 +190,14 @@ class ActorSys {
         this.createActor(msg.className, msg.actorName, msg.sender)
     }
 
-    // actorRef中的promise需要在这里管理
-    // TODO: 应该是Env的工作
+    // TODO: 以下应该是Env的工作
+    //       都是ActorRef需要用到的接口
 
     /**
      * 在actorRef中生成一个Promise返回给用户
      * 并登记会话，等待回复
      * @param  {[type]} sessionID
-     * @return {[type]}          
+     * @return {[type]}
      */
     makePromise(sessionID, timeout) {
         let promise = new Promise((resolve, reject) => {
@@ -215,6 +216,19 @@ class ActorSys {
         if (resolve) {resolve(_msg.msg)}
         delete this.promises[sessionID]
     }
+
+    /**
+     * 发送信息,直接操作postMessage
+     * - 作为ENV向Sys发管理信息
+     * - 被actorRef.tell | ask调用
+     * * 如果要在主线程中运行, 应该由该接口来区分对sys的调用方式
+     * @method sendMsg
+     * @param  {*} msg
+     * @param  {String} sender
+     * @param  {String} receiver
+     * @param  {String} chanel
+     */
+    sendMsg(msg, sender, receiver, chanel) {}
 }
 
 // G.__ACTOR_SYS__ || (G.__ACTOR_SYS__ = new ActorSys())

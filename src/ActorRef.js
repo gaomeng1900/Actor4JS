@@ -3,11 +3,12 @@
  */
 
 export default class ActorRef {
-    constructor(name, owner, makePromise) {
+    constructor(name, owner, makePromise, sendMsg) {
         this.name = name
         this.owner = owner
         // NOTE: 可能导致this指向问题
         this.makePromise = makePromise
+        this.sendMsg = sendMsg
     }
 
     /**
