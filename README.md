@@ -3,6 +3,8 @@
 ## TODO
 - [ ] 废弃的actor、promise的清理
 
+---
+
 - actor应该有自己的状态数据, 与其他actor隔离
 - 不做持久化
 - 很多actor共享一个线程，保证这个实现细节不影响处理actor状态的单线程性
