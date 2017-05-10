@@ -24,8 +24,8 @@ export default class Actor {
             set state(newState)      {me.state = newState},
             get parent()             {return me.parent},
             get children()           {return me.children},
-            get actorOf()            {return me.actorOf},
-            get supervisorStrategy() {return me.supervisorStrategy},
+            get actorOf()            {return me.actorOf.bind(me)},
+            get supervisorStrategy() {return me.supervisorStrategy.bind(me)},
             get name()               {return me.name}
         }
 
@@ -117,16 +117,18 @@ export default class Actor {
      * @ref 禁止调用
      * @core 调用环境层接口, 讲创建指令送入通信层
      * @method actorOf
-     * @param  {String} actorClass
+     * @param  {String} className
      * @param  {String} actorName
      * @return {ActorRef}
      */
-    actorOf(actorClass, actorName) {
+    actorOf(className, actorName) {
         this.env.sendMsg( // msg, sender, receiver, channel
-            {actorClass, actorName}.
+            {className, actorName},
             this.name, "__sys__", "create_actor"
         )
-        return this.env.makeActorRef(actorName, this.name)
+        let ref = this.env.makeActorRef(actorName, this.name)
+        this.children.push(ref)
+        return ref
     }
 
     /**
@@ -194,10 +196,10 @@ export default class Actor {
                 console.log("子组件停止", _msg.sender.name)
                 break
             case "Error": // 子组件主动报错
-                console.log("子组件主动报错", _msg.msg.message)
+                console.warn("子组件主动报错", _msg.sender.name, _msg.msg.message)
                 break
             default: // js内置错误(不可控的程序错误)
-                console.log("程序不可控错误")
+                console.warn("程序不可控错误", _msg.sender.name, _msg.msg.stack)
                 return
         }
     }
@@ -209,6 +211,7 @@ export default class Actor {
      * @method stop
      */
     stop() {
+        // console.log(this.children)
         this.children.forEach(child => {
             child.kill()
         })
@@ -216,7 +219,7 @@ export default class Actor {
             type: "stopped",
             message: "stop method was called",
         }
-        this.sendMsg( // msg, sender, receiver, channel
+        this.env.sendMsg( // msg, sender, receiver, channel
             supervisorMsg,
             this.name,
             this.parent.name,

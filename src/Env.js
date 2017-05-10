@@ -89,6 +89,7 @@ export default class Env {
                     let supervisorMsg = {
                         type: e.name,
                         message: e.message,
+                        stack: e.stack
                     }
                     // TODO: 怎么交给父组件
                     this.sendMsg( // msg, sender, receiver, channel
@@ -109,7 +110,7 @@ export default class Env {
                 try {
                     receiver.stop()
                 } catch (e) {
-                    console.error("未知错误: 无法关闭actor")
+                    console.error("未知错误: 无法关闭actor", e)
                 }
                 return
             default: // actor之间的常规信息沟通（用户上下文）
@@ -138,6 +139,7 @@ export default class Env {
                     let supervisorMsg = {
                         type: e.name,
                         message: e.message,
+                        stack: e.stack
                     }
                     this.sendMsg( // msg, sender, receiver, channel
                         supervisorMsg,
@@ -190,7 +192,7 @@ export default class Env {
             // 如果及时返回，resolve被调用，reject将会失效
             // 如果reject先被调用，resolve将会失效
             this.promises[sessionID] = (msg) => resolve(msg)
-            setTimeout(reject("timeout"), timeout)
+            setTimeout(() => reject("timeout"), timeout)
         })
         return promise
     }

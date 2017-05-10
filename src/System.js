@@ -105,13 +105,14 @@ class ActorSys {
     createActor(className, actorName, parent) {
         // 检查是否定义
         let character = this.characters[className]
-        if (!character) {console.error("className undefined"); return}
+        if (!character) 
+            {console.error("className undefined", className); return}
         // 检查是否重名
         if (this.actors[actorName] && this.actors[actorName].alive)
             {console.error("duplicated name"); return}
         // 选择一个Worker, 调度方案: 挑兵挑将......
         let workerIndex = this.pointer ++
-        if (this.pointer > this.pool - 1) { this.pointer = 0 }
+        if (this.pointer > this.conf.pool - 1) { this.pointer = 0 }
         // 向其发送创建指令
         this.postMessage({
             channel: "create_actor",
@@ -135,7 +136,7 @@ class ActorSys {
      * @param  {String} parent
      */
     destroyActor(name, parent) {
-        let actor = this.actors[className]
+        let actor = this.actors[name]
         if (!actor) {console.error("name does not exist"); return}
         // 鉴权
         if (actor.parent !== parent)
@@ -176,9 +177,11 @@ class ActorSys {
             default:
                 if (_msg.receiver === "__root__") {
                     if (_msg.channel === "supervisor") {
+                        if (_msg.msg.type === "stopped") {return}
                         console.error(
                             `${_msg.sender} 发生无法处理的错误`,
-                            _msg.msg
+                            _msg.msg,
+                            _msg.msg.stack
                         )
                         return
                     }
@@ -198,6 +201,15 @@ class ActorSys {
      */
     postMessage(_msg) {
         // console.log("#BUS", _msg);
+        if (_msg.worker === undefined && !this.actors[_msg.receiver]) {
+            console.error("一层路由失败，找不到actor", _msg.receiver)
+            return 
+        }
+        if (_msg.worker === undefined && !this.actors[_msg.receiver].alive) {
+            // actor已经关闭，死信
+            console.warn("actor已经关闭", _msg)
+            return 
+        }
         // 第一层路由
         let workerIndex = _msg.worker !== undefined ?
                           _msg.worker :
@@ -255,7 +267,7 @@ class ActorSys {
     }
 
     fulfillPromise(_msg) {
-        if (_msg.sessionState !== "response") {console.error("wrong sessionState: sys主线程暂时不受理询问", _msg)}
+        if (_msg.sessionState !== "response") {console.error("wrong sessionState: sys主线程不受理主动询问", _msg)}
         let sessionID = _msg.sessionID
         let resolve = this.promises[sessionID]
         if (resolve) {resolve(_msg)}
@@ -277,10 +289,10 @@ class ActorSys {
      * @NOTE: 代码同步到system.js
      */
     sendMsg(msg, sender, receiver,
-            chanel = "normal", sessionState, sessionID) {
-        this.hForward({
+            channel = "normal", sessionState, sessionID) {
+        this.onmessage({
             msg, sender, receiver,
-            chanel, sessionState, sessionID
+            channel, sessionState, sessionID
         })
     }
 }
