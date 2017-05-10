@@ -12,14 +12,14 @@ const confDefault = {
 }
 
 class ActorSys {
-    constructor(conf) {
+    constructor(config) {
         // singleton
         if (G.__ACTOR_SYS__) {
             throw new Error("ActorSystem should be a singleton")
         }
         G.__ACTOR_SYS__ = this
 
-        this.conf = { ...confDefault, ...conf }
+        this.conf = { ...confDefault, ...config }
         let conf = this.conf
         if (conf.pool < 1) { throw new Error("pool must >= 1") }
 
@@ -69,6 +69,10 @@ class ActorSys {
         // 检查关键特性是否定义
         if (!character.receive) {console.error("receive undefined")}
         // 录入
+        // TODO: 兼容性
+        Object.keys(character).forEach(key => {
+            character[key] = character[key].toString()
+        })
         this.characters[className] = character
     }
 
@@ -101,9 +105,10 @@ class ActorSys {
     createActor(className, actorName, parent) {
         // 检查是否定义
         let character = this.characters[className]
-        if (!character) {console.error("className undefined")}
+        if (!character) {console.error("className undefined"); return}
         // 检查是否重名
-        if (this.actors[actorName]) {console.error("duplicated name")}
+        if (this.actors[actorName] && this.actors[actorName].alive)
+            {console.error("duplicated name"); return}
         // 选择一个Worker, 调度方案: 挑兵挑将......
         let workerIndex = this.pointer ++
         if (this.pointer > this.pool - 1) { this.pointer = 0 }
@@ -112,8 +117,6 @@ class ActorSys {
             channel: "create_actor",
             worker: workerIndex,
             sender: "__sys__",
-            // receiver: "",
-            // session: "",
             msg: {
                 name: actorName,
                 parent: parent,
@@ -121,7 +124,31 @@ class ActorSys {
             }
         })
         // 录入信息(用于信息路由)
-        this.actors[actorName] = {workerIndex, parent}
+        this.actors[actorName] = {workerIndex, parent, alive:true}
+    }
+
+    /**
+     * 销毁actor
+     * 校验权限, 发送删除指令, 删除actor的记录
+     * @method destroyActor
+     * @param  {String} name
+     * @param  {String} parent
+     */
+    destroyActor(name, parent) {
+        let actor = this.actors[className]
+        if (!actor) {console.error("name does not exist"); return}
+        // 鉴权
+        if (actor.parent !== parent)
+            {console.error("wrong auth, not parent"); return}
+        // 发送销毁指令
+        this.postMessage({
+            channel: "kill",
+            sender: parent,
+            receiver: name,
+            msg: {}
+        })
+        // 记录(以免占name)
+        this.actors[name].alive = false
     }
 
     /**
@@ -139,11 +166,22 @@ class ActorSys {
     onmessage(_msg) {
         switch (_msg.channel) {
             case "create_actor":
-                // 需要sys处理的特殊信道
+                // 需要sys处理的特殊信道: 新建actor
                 this.hCreateActor(_msg)
-                break
+                return
+            case "kill":
+                // 需要sys处理的特殊信道: 销毁actor
+                this.hDestroyActor(_msg)
+                return
             default:
-                if (_msg.receiver === "__sys__") {
+                if (_msg.receiver === "__root__") {
+                    if (_msg.channel === "supervisor") {
+                        console.error(
+                            `${_msg.sender} 发生无法处理的错误`,
+                            _msg.msg
+                        )
+                        return
+                    }
                     // 返回给用户的普通信息
                     this.fulfillPromise(_msg)
                 } else {
@@ -159,8 +197,10 @@ class ActorSys {
      * @param  {*} _msg
      */
     postMessage(_msg) {
+        // console.log("#BUS", _msg);
         // 第一层路由
-        let workerIndex = _msg.worker ||
+        let workerIndex = _msg.worker !== undefined ?
+                          _msg.worker :
                           this.actors[_msg.receiver].workerIndex
         // 发送
         this.workers[workerIndex].postMessage(_msg)
@@ -187,7 +227,11 @@ class ActorSys {
      */
     hCreateActor(_msg) {
         let msg = _msg.msg
-        this.createActor(msg.className, msg.actorName, msg.sender)
+        this.createActor(msg.className, msg.actorName, _msg.sender)
+    }
+
+    hDestroyActor(_msg) {
+        this.destroyActor(_msg.receiver, _msg.sender)
     }
 
     // TODO: 以下应该是Env的工作
@@ -205,13 +249,13 @@ class ActorSys {
             // 如果及时返回，resolve被调用，reject将会失效
             // 如果reject先被调用，resolve将会失效
             this.promises[sessionID] = (msg) => resolve(msg)
-            setTimeout(reject("timeout"), timeout)
+            setTimeout(() => reject("timeout"), timeout)
         })
         return promise
     }
 
     fulfillPromise(_msg) {
-        if (_msg.sessionState !== "response") {console.error("wrong sessionState: sys主线程暂时不受理询问")}
+        if (_msg.sessionState !== "response") {console.error("wrong sessionState: sys主线程暂时不受理询问", _msg)}
         let sessionID = _msg.sessionID
         let resolve = this.promises[sessionID]
         if (resolve) {resolve(_msg)}
@@ -225,12 +269,19 @@ class ActorSys {
      * * 如果要在主线程中运行, 应该由该接口来区分对sys的调用方式
      * @method sendMsg
      * @param  {*} msg
-     * @param  {String} sender
-     * @param  {String} receiver
-     * @param  {String} chanel
+     * @param  {String} sender 发送者的name
+     * @param  {String} receiver 接受者的name
+     * @param  {String} chanel 信道 default: "normal"
+     * @param  {String} sessionState 会话状态 default: undefined
+     * @param  {String} sessionID 回话ID default: undefined
+     * @NOTE: 代码同步到system.js
      */
-    sendMsg(msg, sender, receiver, chanel) {
-        this.hForward({ msg, sender, receiver, chanel })
+    sendMsg(msg, sender, receiver,
+            chanel = "normal", sessionState, sessionID) {
+        this.hForward({
+            msg, sender, receiver,
+            chanel, sessionState, sessionID
+        })
     }
 }
 

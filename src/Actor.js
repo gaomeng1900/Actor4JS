@@ -14,39 +14,53 @@ export default class Actor {
 
         this.name = c.name
         this.state = {}
-        this.parent = parent
+        this.parent = this.env.makeActorRef(c.parent, c.name)
         this.children = []
 
         // 构造一个加的this传给用户编写的代码, 以隔离环境
+        let me = this // 不转接一下的话下面的this会指向object, 导致循环
         this.safeContex = {
-            get state()              {return this.state},
-            set state(newState)      {this.state = newState},
-            get parent()             {return this.parent},
-            get children()           {return this.children},
-            get actorOf()            {return this.actorOf},
-            get supervisorStrategy() {return this.supervisorStrategy},
-            get name()               {return this.name}
+            get state()              {return me.state},
+            set state(newState)      {me.state = newState},
+            get parent()             {return me.parent},
+            get children()           {return me.children},
+            get actorOf()            {return me.actorOf},
+            get supervisorStrategy() {return me.supervisorStrategy},
+            get name()               {return me.name}
         }
 
         // 构造核心接口
         this.receive = new Function(
             "msg",
-            `(${c.receive}).bind(this.safeContex)(msg)`
+            `
+            var self = this.safeContex;
+            var me = this.safeContex;
+            (${c.receive}).bind(this.safeContex)(msg);
+            `
         )
         // 可选的接口
         if (c.preStart) {
             this.preStart = new Function(
-                `(${c.preStart}).bind(this.safeContex)`
+                `
+                var self = this.safeContex;
+                var me = this.safeContex;
+                (${c.preStart}).bind(this.safeContex)()
+                `
             )
         }
         if (c.supervisorStrategy) {
             this.supervisorStrategy = new Function(
                 "ecp",
-                `(${c.supervisorStrategy}).bind(this.safeContex)(ecp)`
+                `
+                var self = this.safeContex;
+                var me = this.safeContex;
+                (${c.supervisorStrategy}).bind(this.safeContex)(ecp)
+                `
             )
         }
         // 运行初始化脚本
         this.preStart()
+        // console.log(this);
     }
 
     /**
@@ -108,7 +122,11 @@ export default class Actor {
      * @return {ActorRef}
      */
     actorOf(actorClass, actorName) {
-        // return new ActorRef()
+        this.env.sendMsg( // msg, sender, receiver, channel
+            {actorClass, actorName}.
+            this.name, "__sys__", "create_actor"
+        )
+        return this.env.makeActorRef(actorName, this.name)
     }
 
     /**
@@ -164,20 +182,45 @@ export default class Actor {
      * @param  {Object}           exception
      */
     supervisorStrategy(_msg) {
-        _msg = {
-            msg: {
-                type: ErrorType, // "MIA" <- missing in action, "dying" <- 即将停止
-                message: e.message,
-            }
-            sender: _msg.receiver
+        // _msg = {
+        //     msg: {
+        //         type: ErrorType, // "MIA" <- missing in action, "dying" <- 即将停止
+        //         message: e.message,
+        //     }
+        //     sender: _msg.receiver
+        // }
+        switch (_msg.msg.type) {
+            case "stopped": // 子actor停止运转
+                console.log("子组件停止", _msg.sender.name)
+                break
+            case "Error": // 子组件主动报错
+                console.log("子组件主动报错", _msg.msg.message)
+                break
+            default: // js内置错误(不可控的程序错误)
+                console.log("程序不可控错误")
+                return
         }
     }
 
     /**
      * 停掉当前的actor
      * 递归地停掉所有的子actors
+     * 向父actor发送监控指令
      * @method stop
-     * @return [type] [description]
      */
-    stop() {}
+    stop() {
+        this.children.forEach(child => {
+            child.kill()
+        })
+        let supervisorMsg = {
+            type: "stopped",
+            message: "stop method was called",
+        }
+        this.sendMsg( // msg, sender, receiver, channel
+            supervisorMsg,
+            this.name,
+            this.parent.name,
+            "supervisor",
+        )
+    }
 }

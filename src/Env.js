@@ -19,7 +19,7 @@ export default class Env {
         // ask等待的回复
         this.promises = {}
 
-        console.log("Env inited")
+        // console.log("Env inited")
     }
 
     /**
@@ -67,20 +67,19 @@ export default class Env {
      * @param  {*}    _msg 结构化信息
      */
     dispatchMsg(_msg) {
-        switch (_msg.chanel) {
+        let receiver = null
+        switch (_msg.channel) {
             case "create_actor": // sys要求在本环境下创建一个actor
                 this.createActor(_msg.msg)
-                break
+                return
             case "supervisor": // 调用supervisorStrategy
                 // 第二层路由
-                let receiver = this.actors[_msg.receiver]
+                receiver = this.actors[_msg.receiver]
                 if (!receiver) {
-                    // TODO: 搞个死信信箱？
                     console.error("no such actor here")
                     return
                 }
                 // 把sender换成一个ref, 用于方便的返回信息
-                // @BOOKMARK
                 _msg.sender = this.makeActorRef(_msg.sender, _msg.receiver)
                 try {
                     receiver.supervisorStrategy(_msg)
@@ -90,22 +89,32 @@ export default class Env {
                     let supervisorMsg = {
                         type: e.name,
                         message: e.message,
-                        sender: receiver.name,
-                        receiver: receiver.parent
                     }
                     // TODO: 怎么交给父组件
-                    // @BOOKMARK
-                    this.sendMsg(
+                    this.sendMsg( // msg, sender, receiver, channel
                         supervisorMsg,
                         receiver.name,
-                        receiver.parent,
+                        receiver.parent.name,
                         "supervisor",
                     )
                 }
-                break
+                return
+            case "kill":
+                // 第二层路由
+                receiver = this.actors[_msg.receiver]
+                if (!receiver) {
+                    console.error("no such actor here")
+                    return
+                }
+                try {
+                    receiver.stop()
+                } catch (e) {
+                    console.error("未知错误: 无法关闭actor")
+                }
+                return
             default: // actor之间的常规信息沟通（用户上下文）
                 // 第二层路由
-                let receiver = this.actors[_msg.receiver]
+                receiver = this.actors[_msg.receiver]
                 if (!receiver) {
                     // TODO: 搞个死信信箱？
                     console.error("no such actor here")
@@ -116,6 +125,8 @@ export default class Env {
                     this.fulfillPromise(_msg)
                     return
                 }
+                // 把sender换成一个ref, 用于方便的返回信息
+                _msg.sender = this.makeActorRef(_msg.sender, _msg.receiver)
                 // NOTE: 这里是直接带着信道信息层传入的
                 // 因为sender信息可能用得到
                 // TODO: 如果有更好的方式传入sender
@@ -127,15 +138,11 @@ export default class Env {
                     let supervisorMsg = {
                         type: e.name,
                         message: e.message,
-                        sender: receiver.name,
-                        receiver: receiver.parent
                     }
-                    // TODO: 怎么交给父组件
-                    // @BOOKMARK
-                    this.sendMsg(
+                    this.sendMsg( // msg, sender, receiver, channel
                         supervisorMsg,
                         receiver.name,
-                        receiver.parent,
+                        receiver.parent.name,
                         "supervisor",
                     )
                 }
@@ -150,13 +157,19 @@ export default class Env {
      * * 如果要在主线程中运行, 应该由该接口来区分对sys的调用方式
      * @method sendMsg
      * @param  {*} msg
-     * @param  {String} sender
-     * @param  {String} receiver
-     * @param  {String} chanel
+     * @param  {String} sender 发送者的name
+     * @param  {String} receiver 接受者的name
+     * @param  {String} channel 信道 default: "normal"
+     * @param  {String} sessionState 会话状态 default: undefined
+     * @param  {String} sessionID 回话ID default: undefined
      * @NOTE: 代码同步到system.js
      */
-    sendMsg(msg, sender, receiver, chanel) {
-        postMessage({ sender, receiver, chanel, msg })
+    sendMsg(msg, sender, receiver,
+            channel = "normal", sessionState, sessionID) {
+        postMessage({
+            msg, sender, receiver,
+            channel, sessionState, sessionID
+        })
     }
 
     // 信息层模块 ↑
