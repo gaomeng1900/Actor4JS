@@ -125,7 +125,7 @@ class ActorSys {
             }
         })
         // 录入信息(用于信息路由)
-        this.actors[actorName] = {workerIndex, parent, alive:true}
+        this.actors[actorName] = {workerIndex, parent, alive:true, name: actorName}
     }
 
     /**
@@ -295,6 +295,49 @@ class ActorSys {
             channel, sessionState, sessionID
         })
     }
+
+    // 调试工具
+    print() {
+        let a = {}
+        Object.keys(this.actors).forEach(actorName => {
+            if (this.actors[actorName.toString()].parent === "__root__") {
+                a[actorName.toString()] = {...this.actors[actorName.toString()]}
+                a[actorName.toString()].children = {}
+            }
+        })
+        let i = Object.keys(this.actors).length
+        while (i--) {        
+            Object.keys(this.actors).forEach(actorName => {
+                if (this.actors[actorName.toString()].parent !== "__root__") {
+                    // a[this.actors[actorName].parent].children.push({...this.actors[actorName]})
+                    findParent(a, this.actors[actorName.toString()])
+                }
+            })
+        }
+        console.log(JSON.stringify(a, null, '\t'))
+    }
+}
+
+function treeParse(nodeSource, nodeTarget) {
+
+}
+
+/**
+ * 从node中找到child的parent并把child挂上
+ * @param  {Object} node 
+ * @param  {Object} child    
+ */
+function findParent(node, child) {
+    // 到底了
+    if (Object.keys(node).length === 0) {return}
+    // found it
+    if (node[child.parent.toString()]) {
+        node[child.parent.toString()].children[child.name.toString()] = {...child, children: {}}
+        return
+    } 
+    Object.keys(node).forEach(actorName => {
+        findParent(node[actorName.toString()].children || node[actorName.toString()], child)
+    })
 }
 
 // G.__ACTOR_SYS__ || (G.__ACTOR_SYS__ = new ActorSys())

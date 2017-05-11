@@ -5,8 +5,6 @@ const system = new ActorSys()
 window.system = system
 // console.timeEnd("initSys")
 
-console._a = 456
-
 // console.time("define")
 system.define("A", {
     receive: msg => {
@@ -23,17 +21,22 @@ system.define("A", {
 })
 system.define("B", {
     receive: msg => {
-        let a1 = self.actorOf("A", msg.msg)
-        let p = a1.ask("wahaha")
-        p.then(msg => {
-            console.log("got reply", msg)
-        })
-         .catch(e => console.warn(e))
+        let layer = msg.msg
+        if (layer > 5) {
+            let a1 = self.actorOf("A", "a" + msg.msg)
+            let p = a1.ask("_" + Math.random())
+            p.then(msg => console.log("got reply", msg))
+             .catch(e => console.warn(e))
+        } else {
+            let b = self.actorOf("B", "b"+layer)
+            b.tell(layer+1)
+        }
         self.state.count ++
+        self.state.flag = !self.state.flag
     },
 
     preStart: () => {
-        self.state = { count: 0 }
+        self.state = { count: 0, flag: true }
     }
 })
 // console.timeEnd("define")
@@ -56,18 +59,20 @@ let a0 = system.actorOf("A", "a0")
 //         console.log("#promise0", "success", msg)
 //         console.timeEnd("msgTrans")
 //     }).catch(msg => console.log("#promise0", "fail", msg))
-// }, 1000)
+// }, 1000)    if (Object.keys(node).length === 0) {return}
+
 
 let b0 = system.actorOf("B", "b0")
-b0.tell("haha")
-b0.tell("xixi")
+// b0.tell("haha")
+// b0.tell("xixi")
 // b0.tell("_1")
+b0.tell(1)
 
-let c = 10
-while (c--) {
-    // b0.tell("hahaha")
-    b0.tell(`_${c}`)
-}
+// let c = 10
+// while (c--) {
+//     // b0.tell("hahaha")
+//     b0.tell(`_${c}`)
+// }
 
 // setTimeout(() => b0.kill(), 1000)
 // setTimeout(() => b0.tell("yoyo"), 1500)
