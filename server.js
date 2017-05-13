@@ -38,6 +38,13 @@ app.get('/', (req, res)=>{
     res.end(html)
 })
 
+app.get('/romeo', (req, res)=>{
+    console.log('visiting index')
+    var html = jade.renderFile(path.join(__dirname, 'src', 'demo', 'romeo.jade'))
+    res.writeHead(200,  { 'Content-Type': 'text/html charset=utf-8' })
+    res.end(html)
+})
+
 // listen
 app.listen(3555, '0.0.0.0', (err)=>{
     if (err) {

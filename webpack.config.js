@@ -13,8 +13,8 @@ module.exports = {
     // 因为npm相对路径发生变化
     // @NOTE 使用绝对地址来避免潜在问题
     entry: {
-        index: [path.resolve("./src/demo/index.js"), 'webpack-hot-middleware/client?reload=true'] // 热重载中间件
-        // demo: [path.resolve("./src/demo/demo.js"), 'webpack-hot-middleware/client?reload=true'] // 热重载中间件
+        index: [path.resolve("./src/demo/index.js"), 'webpack-hot-middleware/client?reload=true'],
+        romeo: [path.resolve("./src/demo/romeo.js"), 'webpack-hot-middleware/client?reload=true']
     },
     output: {
         path: path.resolve("./build"),
@@ -40,6 +40,10 @@ module.exports = {
             {
                 test: /\.jade/,
                 loader: 'pug-loader'
+            },
+            {
+                test: /\.txt/,
+                loader: 'file-loader'
             }
         ]
     },
