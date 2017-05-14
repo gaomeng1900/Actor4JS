@@ -3,6 +3,27 @@
 ## TODO
 - [ ] 废弃的actor、promise的清理
 
+## Dependencies
+
+- Node
+- npm/cnpm
+- webpack
+- sass
+- Chrome 55+
+
+## Run
+
+```shell
+npm install
+npm start
+```
+
+## Demo
+
+用chrome打开 http://localhost:3555/romeo
+
+## NOTE
+
 ---
 
 - actor应该有自己的状态数据, 与其他actor隔离
