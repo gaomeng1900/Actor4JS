@@ -6,6 +6,7 @@
 export default class Actor {
     constructor(character, env) {
         this.env = env // 该类的所有接口不可调用env以外命名域的对象
+        this.character = character
         let c = character
 
         if (!c.name) {throw new Error("lack of key:name")}
@@ -35,6 +36,7 @@ export default class Actor {
             `
             var self = this.safeContex;
             var me = this.safeContex;
+            var __debug = this;
             (${c.receive}).bind(this.safeContex)(msg);
             `
         )
@@ -45,6 +47,24 @@ export default class Actor {
                 var self = this.safeContex;
                 var me = this.safeContex;
                 (${c.preStart}).bind(this.safeContex)()
+                `
+            )
+        }
+        if (c.preRestart) {
+            this.preRestart = new Function(
+                `
+                var self = this.safeContex;
+                var me = this.safeContex;
+                (${c.preRestart}).bind(this.safeContex)()
+                `
+            )
+        }
+        if (c.postRestart) {
+            this.postRestart = new Function(
+                `
+                var self = this.safeContex;
+                var me = this.safeContex;
+                (${c.postRestart}).bind(this.safeContex)()
                 `
             )
         }
@@ -60,6 +80,8 @@ export default class Actor {
         }
         // 运行初始化脚本
         this.preStart()
+        // 避免重启时再次调用prestart（该character应该只调用一次）
+        delete this.character.preStart
         // console.log(this);
     }
 
@@ -78,7 +100,7 @@ export default class Actor {
     /**
      * 初始化自身状态, actor启动的时候会运行这个method
      * actor的state不做持久化
-     * 唯一的钩子函数
+     * 重启时不会运行， 只有第一次启动的时候会运行
      * @ref 可以通过该接口查看源码
      * @core 每次创建时运行
      * @method preStart
@@ -86,6 +108,22 @@ export default class Actor {
      */
     preStart() {
         this.state = {}
+    }
+
+    /**
+     * 重启之前运行
+     * @method preRestart
+     */
+    preRestart() {
+        console.log(this.name, "preRestart")
+    }
+
+    /**
+     * 重启之后运行
+     * @method postRestart
+     */
+    postRestart() {
+        console.log(this.name, "postRestart")
     }
 
     /**
@@ -194,10 +232,13 @@ export default class Actor {
         switch (_msg.msg.type) {
             case "stopped": // 子actor停止运转
                 console.log("子组件停止", _msg.sender.name)
-                break
+                return
+            case "restarted": // 子actor重启
+                console.log("子组件重启", _msg.sender.name)
+                return
             case "Error": // 子组件主动报错
                 console.warn("子组件主动报错", _msg.sender.name, _msg.msg.message)
-                break
+                return
             default: // js内置错误(不可控的程序错误)
                 console.warn("程序不可控错误", _msg.sender.name, _msg.msg.stack)
                 return
@@ -215,6 +256,7 @@ export default class Actor {
         this.children.forEach(child => {
             child.kill()
         })
+        // 通知监管者自己的关闭行为
         let supervisorMsg = {
             type: "stopped",
             message: "stop method was called",
@@ -225,5 +267,53 @@ export default class Actor {
             this.parent.name,
             "supervisor",
         )
+        this.destroy()
+    }
+
+    /**
+     * 重启actor（重新运行析构函数，恢复初始化状态，递归重启子actors）
+     * @method restart
+     */
+    restart() {
+        // 子actor需要在重启后继续使用
+        let children = [...this.children]
+        // 钩子函数
+        this.preRestart()
+        // 递归重启
+        this.children.forEach(child => child.restart())
+        // 通知监管者自己的重启行为
+        let supervisorMsg = {
+            type: "restarted",
+            message: "restart method was called",
+        }
+        this.env.sendMsg( // msg, sender, receiver, channel
+            supervisorMsg,
+            this.name,
+            this.parent.name,
+            "supervisor",
+        )
+        // 重新构造
+        this.constructor(this.character, this.env)
+        // 恢复子actor引用
+        this.children = children
+        // 钩子函数
+        this.postRestart()
+    }
+
+    /**
+     * 析构函数
+     * 断掉所有向外的引用
+     * @method destroy
+     */
+    destroy() {
+        delete this.character
+        delete this.env
+        delete this.safeContex
+        delete this.receive
+        delete this.preStart
+        delete this.supervisorStrategy
+        delete this.actorOf
+        delete this.stop
+        delete this.restart
     }
 }

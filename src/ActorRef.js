@@ -70,6 +70,20 @@ export default class ActorRef {
                 "kill", // channel
             )
         }
+        this.stop = () => {this.kill()}
+
+        /**
+         * 重新初始化该actor，并递归重启子actor
+         * @method restart
+         */
+        this.restart = () => {
+            sendMsg(
+                {},
+                this.owner, //sender
+                this.name, // receiver
+                "restart", // channel
+            )
+        }
     }
 
     get name() {return this.getName()}

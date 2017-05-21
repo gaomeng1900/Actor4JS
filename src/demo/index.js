@@ -27,6 +27,7 @@ system.define("B", {
             let p = a1.ask("_" + Math.random())
             p.then(msg => console.log("got reply", msg))
              .catch(e => console.warn(e))
+
         } else {
             let b = self.actorOf("B", "b"+layer)
             b.tell(layer+1)
@@ -41,7 +42,10 @@ system.define("B", {
 })
 // console.timeEnd("define")
 
-let a0 = system.actorOf("A", "a0")
+// let a0 = system.actorOf("A", "a0")
+// a0.tell("hello")
+// a0.tell("hello")
+// a0.tell("hello")
 // console.time("WorkerInitAndMsgTrans")
 // let promise0 = a0.ask("haha")
 // // let promise1 = a0.ask("haha")
@@ -74,5 +78,12 @@ b0.tell(1)
 //     b0.tell(`_${c}`)
 // }
 
-// setTimeout(() => b0.kill(), 1000)
+setTimeout(() => {
+    b0.restart()
+    // b0.tell(10)
+}, 1000)
+setTimeout(() => {
+    // b0.restart()
+    b0.tell(10)
+}, 2000)
 // setTimeout(() => b0.tell("yoyo"), 1500)

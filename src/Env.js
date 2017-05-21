@@ -108,9 +108,25 @@ export default class Env {
                     return
                 }
                 try {
+                    // 递归停止子actor，并析构自身
                     receiver.stop()
+                    // 删掉外部对该actor的唯一引用（使其可被回收）
+                    delete this.actors[_msg.receiver]
                 } catch (e) {
                     console.error("未知错误: 无法关闭actor", e)
+                }
+                return
+            case "restart":
+                // 第二层路由
+                receiver = this.actors[_msg.receiver]
+                if (!receiver) {
+                    console.error("no such actor here")
+                    return
+                }
+                try {
+                    receiver.restart()
+                } catch (e) {
+                    console.error("未知错误: 无法重启actor", e)
                 }
                 return
             default: // actor之间的常规信息沟通（用户上下文）

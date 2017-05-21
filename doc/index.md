@@ -18,7 +18,7 @@ system.define("A", {
                 // 创建子Actor
                 self.actorOf("A", "a1")
                 return
-            case "pattern_1"
+            case "pattern_1":
                 console.log(msg)
                 return
             default:

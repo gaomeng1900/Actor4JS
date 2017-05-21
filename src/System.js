@@ -105,7 +105,7 @@ class ActorSys {
     createActor(className, actorName, parent) {
         // 检查是否定义
         let character = this.characters[className]
-        if (!character) 
+        if (!character)
             {console.error("className undefined", className); return}
         // 检查是否重名
         if (this.actors[actorName] && this.actors[actorName].alive)
@@ -153,6 +153,28 @@ class ActorSys {
     }
 
     /**
+     * 重启actor
+     * 校验权限, 发送重启指令
+     * @method restartActor
+     * @param  {String} name
+     * @param  {String} parent
+     */
+    restartActor(name, parent) {
+        let actor = this.actors[name]
+        if (!actor) {console.error("name does not exist"); return}
+        // 鉴权
+        if (actor.parent !== parent)
+            {console.error("wrong auth, not parent"); return}
+        // 发送重启指令
+        this.postMessage({
+            channel: "restart",
+            sender: parent,
+            receiver: name,
+            msg: {}
+        })
+    }
+
+    /**
      * 信息层模块 ↓
      * 信息源和发送对象都是Worker(即Worker里的Env)
      */
@@ -174,10 +196,14 @@ class ActorSys {
                 // 需要sys处理的特殊信道: 销毁actor
                 this.hDestroyActor(_msg)
                 return
+            case "restart":
+                this.hRestartActor(_msg)
+                return
             default:
                 if (_msg.receiver === "__root__") {
                     if (_msg.channel === "supervisor") {
                         if (_msg.msg.type === "stopped") {return}
+                        if (_msg.msg.type === "restarted") {return}
                         console.error(
                             `${_msg.sender} 发生无法处理的错误`,
                             _msg.msg,
@@ -203,12 +229,12 @@ class ActorSys {
         // console.log("#BUS", _msg);
         if (_msg.worker === undefined && !this.actors[_msg.receiver]) {
             console.error("一层路由失败，找不到actor", _msg.receiver)
-            return 
+            return
         }
         if (_msg.worker === undefined && !this.actors[_msg.receiver].alive) {
             // actor已经关闭，死信
             console.warn("actor已经关闭", _msg)
-            return 
+            return
         }
         // 第一层路由
         let workerIndex = _msg.worker !== undefined ?
@@ -225,7 +251,7 @@ class ActorSys {
     /**
      * handler: actor之间转发信息
      * @method forward
-     * @param  {*} _msg
+     * @param  {Object} _msg
      */
     hForward(_msg) {
         // 忽略信道，信道由Env层进行路由
@@ -235,15 +261,29 @@ class ActorSys {
     /**
      * handler: 创建子actor
      * @method hCreateActor
-     * @param  {*} _msg
+     * @param  {Object} _msg
      */
     hCreateActor(_msg) {
         let msg = _msg.msg
         this.createActor(msg.className, msg.actorName, _msg.sender)
     }
 
+    /**
+     * destroy/kill/stop处理器
+     * @method hDestroyActor
+     * @param  {Object} _msg
+     */
     hDestroyActor(_msg) {
         this.destroyActor(_msg.receiver, _msg.sender)
+    }
+
+    /**
+     * restart处理器
+     * @method hRestartActor
+     * @param  {Object} _msg
+     */
+    hRestartActor(_msg) {
+        this.restartActor(_msg.receiver, _msg.sender)
     }
 
     // TODO: 以下应该是Env的工作
@@ -306,7 +346,7 @@ class ActorSys {
             }
         })
         let i = Object.keys(this.actors).length
-        while (i--) {        
+        while (i--) {
             Object.keys(this.actors).forEach(actorName => {
                 if (this.actors[actorName.toString()].parent !== "__root__") {
                     // a[this.actors[actorName].parent].children.push({...this.actors[actorName]})
@@ -324,8 +364,8 @@ function treeParse(nodeSource, nodeTarget) {
 
 /**
  * 从node中找到child的parent并把child挂上
- * @param  {Object} node 
- * @param  {Object} child    
+ * @param  {Object} node
+ * @param  {Object} child
  */
 function findParent(node, child) {
     // 到底了
@@ -334,7 +374,7 @@ function findParent(node, child) {
     if (node[child.parent.toString()]) {
         node[child.parent.toString()].children[child.name.toString()] = {...child, children: {}}
         return
-    } 
+    }
     Object.keys(node).forEach(actorName => {
         findParent(node[actorName.toString()].children || node[actorName.toString()], child)
     })
