@@ -115,7 +115,7 @@ export default class Actor {
      * @method preRestart
      */
     preRestart() {
-        console.log(this.name, "preRestart")
+        // console.log(this.name, "preRestart")
     }
 
     /**
@@ -123,7 +123,7 @@ export default class Actor {
      * @method postRestart
      */
     postRestart() {
-        console.log(this.name, "postRestart")
+        // console.log(this.name, "postRestart")
     }
 
     /**
