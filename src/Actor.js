@@ -36,7 +36,7 @@ export default class Actor {
             `
             var self = this.safeContex;
             var me = this.safeContex;
-            var __debug = this;
+            // var __debug = this;
             (${c.receive}).bind(this.safeContex)(msg);
             `
         )
