@@ -17,3 +17,19 @@ html(lang="en")
                 th 单词
                 th 使用次数
         script(src="./romeo.js")
+        script.
+            var __b = /x/;
+            var __re = {"控制台检测": __b};
+            window.__i = 0;
+            __b.toString = function () {
+                window.__i++;
+                return "true";
+                //- return '第 ' + (++__i) + ' 次打开控制台';
+            };
+            console.log(__re);
+            console.log(__i);
+            if (!window.__i) {
+                var __e = document.createElement("h3");
+                __e.innerHTML = "请打开调试台（ctrl+shift+i）并刷新以查看输出结果";
+                document.body.insertBefore( __e, document.body.firstChild );
+            }

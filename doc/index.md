@@ -120,7 +120,13 @@ class ActorRef {
      * 停掉子actor, 发送停止指令
      * @method kill
      */
-    kill() { }
+    kill() {}
+
+    /**
+     * 重启子actor
+     * @method restart
+     */
+    restart() {}
 }
 
 ```
@@ -131,8 +137,10 @@ class ActorRef {
 {
     // 必需: 信息接收行为
     receive: function(_msg) {},
-    // 可选: 钩子函数
+    // 可选: 生命周期钩子函数
     preStart: function() {},
+    preRestart: function() {},
+    postRestart: function () {},
     // 可选: 子Actor监管策略
     supervisorStrategy: function (exception) {},
 }
