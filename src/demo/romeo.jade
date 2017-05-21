@@ -7,15 +7,34 @@ html(lang="en")
             table { border-collapse:collapse; }
             table, th, td { border: 1px solid black; }
             #main {
+                float: left;
                 text-align: center;
                 border-spacing: 1px;
             }
+            .tree-wrapper {
+                float: left;
+                margin: 0 0 0 20px;
+            }
+            .title {
+                font-size: 15px;
+                line-height: 20px;
+                font-weight: bold;
+            }
+            #tree {
+                font-family: monospace;
+            }
     body
+        h2 Romeo And Juliet 词频统计
         table#main
             tr
                 th 排名
                 th 单词
                 th 使用次数
+        .tree-wrapper
+            .title actor 结构树
+            pre
+             code#tree
+        
         script(src="./romeo.js")
         script.
             var __b = /x/;
@@ -27,9 +46,9 @@ html(lang="en")
                 //- return '第 ' + (++__i) + ' 次打开控制台';
             };
             console.log(__re);
-            console.log(__i);
             if (!window.__i) {
                 var __e = document.createElement("h3");
-                __e.innerHTML = "请打开调试台（ctrl+shift+i）并刷新以查看输出结果";
+                __e.innerHTML = "**请打开调试台（ctrl+shift+i）并刷新以查看输出结果**";
+                __e.style.color = "red";
                 document.body.insertBefore( __e, document.body.firstChild );
             }

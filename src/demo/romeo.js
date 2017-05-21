@@ -28,7 +28,7 @@ sys.define("WordCount", {
                     console.log(self.name, `
                         Calculation done.
                         There are ${result.length} different words.
-                        The most frequently used word is ${result[0][0]},
+                        The most frequently used word is "${result[0][0]}",
                         which is used ${result[0][1]} times.
                         The full result: \n`, result)
                     self.state._msg.sender.tell(
@@ -154,3 +154,7 @@ fetch("http://demos-meng.oss-cn-shanghai.aliyuncs.com/actor4js/RomeoAndJuliet.tx
         }
     })
 })
+
+setTimeout(function () {
+    document.getElementById("tree").innerHTML = sys.print()
+}, 1500)

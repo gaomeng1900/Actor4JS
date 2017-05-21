@@ -354,13 +354,11 @@ class ActorSys {
                 }
             })
         }
-        console.log(JSON.stringify(a, null, '\t'))
+        return JSON.stringify(a, null, '\t')
+        // console.log(JSON.stringify(a, null, '\t'))
     }
 }
 
-function treeParse(nodeSource, nodeTarget) {
-
-}
 
 /**
  * 从node中找到child的parent并把child挂上

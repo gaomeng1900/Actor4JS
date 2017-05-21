@@ -68,6 +68,15 @@ export default class Actor {
                 `
             )
         }
+        if (c.preStop) {
+            this.preStop = new Function(
+                `
+                var self = this.safeContex;
+                var me = this.safeContex;
+                (${c.preStop}).bind(this.safeContex)()
+                `
+            )
+        }
         if (c.supervisorStrategy) {
             this.supervisorStrategy = new Function(
                 "ecp",
@@ -124,6 +133,14 @@ export default class Actor {
      */
     postRestart() {
         // console.log(this.name, "postRestart")
+    }
+
+    /**
+     * 关闭前运行
+     * @method preStop
+     */
+    preStop() {
+
     }
 
     /**
@@ -252,6 +269,7 @@ export default class Actor {
      * @method stop
      */
     stop() {
+        this.preStop()
         // console.log(this.children)
         this.children.forEach(child => {
             child.kill()
@@ -311,6 +329,9 @@ export default class Actor {
         delete this.safeContex
         delete this.receive
         delete this.preStart
+        delete this.preRestart
+        delete this.postRestart
+        delete this.preStop
         delete this.supervisorStrategy
         delete this.actorOf
         delete this.stop
