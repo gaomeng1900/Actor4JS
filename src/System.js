@@ -40,6 +40,8 @@ class ActorSys {
         console.log("ActorSystem inited")
 
         this.pointer = 0 // 调度用
+
+        this.deadMail = []
     }
 
     /**
@@ -199,6 +201,9 @@ class ActorSys {
             case "restart":
                 this.hRestartActor(_msg)
                 return
+            case "deadMail":
+                this.deadMail.push(_msg)
+                return
             default:
                 if (_msg.receiver === "__root__") {
                     if (_msg.channel === "supervisor") {
@@ -229,11 +234,13 @@ class ActorSys {
         // console.log("#BUS", _msg);
         if (_msg.worker === undefined && !this.actors[_msg.receiver]) {
             console.error("一层路由失败，找不到actor", _msg.receiver)
+            this.deadMail.push(_msg)
             return
         }
         if (_msg.worker === undefined && !this.actors[_msg.receiver].alive) {
             // actor已经关闭，死信
             console.warn("actor已经关闭", _msg)
+            this.deadMail.push(_msg)
             return
         }
         // 第一层路由

@@ -77,6 +77,7 @@ export default class Env {
                 receiver = this.actors[_msg.receiver]
                 if (!receiver) {
                     console.error("no such actor here")
+                    this.sendDeadMail(_msg.msg, _msg.sender, _msg.receiver)
                     return
                 }
                 // 把sender换成一个ref, 用于方便的返回信息
@@ -135,6 +136,7 @@ export default class Env {
                 if (!receiver) {
                     // TODO: 搞个死信信箱？
                     console.error("no such actor here")
+                    this.sendDeadMail(_msg.msg, _msg.sender, _msg.receiver)
                     return
                 }
                 // 对此环境下发起的ask的回复
@@ -163,6 +165,8 @@ export default class Env {
                         receiver.parent.name,
                         "supervisor",
                     )
+                    _msg.sender = _msg.sender.name
+                    this.sendDeadMail(_msg.msg, _msg.sender, _msg.receiver)
                 }
 
         }
@@ -219,5 +223,11 @@ export default class Env {
         let resolve = this.promises[sessionID]
         if (resolve) {resolve(_msg)}
         delete this.promises[sessionID]
+    }
+
+    sendDeadMail(msg, sender, receiver) {
+        this.sendMsg(
+            msg, sender, receiver, "deadMail"
+        )
     }
 }

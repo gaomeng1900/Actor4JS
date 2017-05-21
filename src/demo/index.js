@@ -79,7 +79,8 @@ b0.tell(1)
 // }
 
 setTimeout(() => {
-    b0.restart()
+    // b0.restart()
+    b0.kill()
     // b0.tell(10)
 }, 1000)
 setTimeout(() => {
