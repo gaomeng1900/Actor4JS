@@ -22,12 +22,14 @@ export default class Actor {
         let me = this // 不转接一下的话下面的this会指向object, 导致循环
         this.safeContex = {
             get state()              {return me.state},
+            // NOTE: state下数组元素的修改会直接修改this.state, 不影响使用
             set state(newState)      {me.state = newState},
             get parent()             {return me.parent},
             get children()           {return me.children},
             get actorOf()            {return me.actorOf.bind(me)},
             get supervisorStrategy() {return me.supervisorStrategy.bind(me)},
-            get name()               {return me.name}
+            get name()               {return me.name},
+            error: e => env.error(e, me)
         }
 
         // 构造核心接口

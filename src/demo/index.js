@@ -21,6 +21,9 @@ system.define("A", {
 })
 system.define("B", {
     receive: msg => {
+        setTimeout(`
+            console.log(self)
+        `, 1000)
         let layer = msg.msg
         if (layer > 5) {
             let a1 = self.actorOf("A", "a" + msg.msg)

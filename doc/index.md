@@ -139,6 +139,7 @@ class ActorRef {
     receive: function(_msg) {},
     // 可选: 生命周期钩子函数
     preStart: function() {},
+    preStop: function() {},
     preRestart: function() {},
     postRestart: function () {},
     // 可选: 子Actor监管策略

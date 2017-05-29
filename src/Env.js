@@ -225,9 +225,36 @@ export default class Env {
         delete this.promises[sessionID]
     }
 
+    /**
+     * 加入system的死信信箱
+     * @method sendDeadMail
+     * @param  {Object}     msg
+     * @param  {String}     sender
+     * @param  {String}     receiver
+     */
     sendDeadMail(msg, sender, receiver) {
         this.sendMsg(
             msg, sender, receiver, "deadMail"
+        )
+    }
+
+    /**
+     * 向父上报错误
+     * @method error
+     * @param  {Error} e
+     * @param  {Actor} child
+     */
+    error(e, child) {
+        let supervisorMsg = {
+            type: e.name,
+            message: e.message,
+            stack: e.stack
+        }
+        this.sendMsg( // msg, sender, receiver, channel
+            supervisorMsg,
+            child.name,
+            child.parent.name,
+            "supervisor",
         )
     }
 }
