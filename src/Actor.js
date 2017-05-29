@@ -20,7 +20,7 @@ export default class Actor {
 
         // 构造一个加的this传给用户编写的代码, 以隔离环境
         let me = this // 不转接一下的话下面的this会指向object, 导致循环
-        this.safeContex = {
+        this.safeContext = {
             get state()              {return me.state},
             // NOTE: state下数组元素的修改会直接修改this.state, 不影响使用
             set state(newState)      {me.state = newState},
@@ -36,46 +36,46 @@ export default class Actor {
         this.receive = new Function(
             "msg",
             `
-            var self = this.safeContex;
-            var me = this.safeContex;
+            var self = this.safeContext;
+            var me = this.safeContext;
             // var __debug = this;
-            (${c.receive}).bind(this.safeContex)(msg);
+            (${c.receive}).bind(this.safeContext)(msg);
             `
         )
         // 可选的接口
         if (c.preStart) {
             this.preStart = new Function(
                 `
-                var self = this.safeContex;
-                var me = this.safeContex;
-                (${c.preStart}).bind(this.safeContex)()
+                var self = this.safeContext;
+                var me = this.safeContext;
+                (${c.preStart}).bind(this.safeContext)()
                 `
             )
         }
         if (c.preRestart) {
             this.preRestart = new Function(
                 `
-                var self = this.safeContex;
-                var me = this.safeContex;
-                (${c.preRestart}).bind(this.safeContex)()
+                var self = this.safeContext;
+                var me = this.safeContext;
+                (${c.preRestart}).bind(this.safeContext)()
                 `
             )
         }
         if (c.postRestart) {
             this.postRestart = new Function(
                 `
-                var self = this.safeContex;
-                var me = this.safeContex;
-                (${c.postRestart}).bind(this.safeContex)()
+                var self = this.safeContext;
+                var me = this.safeContext;
+                (${c.postRestart}).bind(this.safeContext)()
                 `
             )
         }
         if (c.preStop) {
             this.preStop = new Function(
                 `
-                var self = this.safeContex;
-                var me = this.safeContex;
-                (${c.preStop}).bind(this.safeContex)()
+                var self = this.safeContext;
+                var me = this.safeContext;
+                (${c.preStop}).bind(this.safeContext)()
                 `
             )
         }
@@ -83,9 +83,9 @@ export default class Actor {
             this.supervisorStrategy = new Function(
                 "ecp",
                 `
-                var self = this.safeContex;
-                var me = this.safeContex;
-                (${c.supervisorStrategy}).bind(this.safeContex)(ecp)
+                var self = this.safeContext;
+                var me = this.safeContext;
+                (${c.supervisorStrategy}).bind(this.safeContext)(ecp)
                 `
             )
         }
@@ -328,7 +328,7 @@ export default class Actor {
     destroy() {
         delete this.character
         delete this.env
-        delete this.safeContex
+        delete this.safeContext
         delete this.receive
         delete this.preStart
         delete this.preRestart
