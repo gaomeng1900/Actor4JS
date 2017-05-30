@@ -109,3 +109,49 @@ initState(){
 - 不同信道交给不同的程序处理
 
 http://jasonqu.github.io/akka-doc-cn/2.3.6/scala/book/chapter3/01_actors.html
+
+
+运行结果：
+
+benchmark======
+
+ActorSystem inited
+系统初始化用时: 4.7001953125ms
+定义actor用时: 0.514892578125ms
+在主线程中创建ActorRef用时: 1.169921875ms
+从主线程到Actor的消息来回用时: 5.906982421875ms
+从主线程创建Actor+来回通讯用时: 10.677734375ms
+从Actor创建子Actor+来回通讯用时: 10.30029296875ms
+从Actor创建子ActorRef用时: 0.448974609375ms
+从Actor与子Actor来回通信用时: 4.919921875ms
+
+
+ActorSystem inited
+romeo:27 Object {控制台检测: true}
+counter I'm created.
+counter got text, wating for signal...
+counter got signal, startCounting...
+reducer I'm created.
+reducer 总长度 156903 , 将创建 11 个mapper
+mapper10 I'm created.
+mapper6 I'm created.
+mapper9 I'm created.
+mapper7 I'm created.
+mapper8 I'm created.
+mapper4 I'm created.
+mapper2 I'm created.
+mapper1 I'm created.
+mapper3 I'm created.
+mapper5 I'm created.
+mapper0 I'm created.
+reducer FINISHED
+counter
+                        Calculation done.
+                        There are 3579 different words.
+                        The most frequently used word is "and",
+                        which is used 714 times.
+                        The full result:
+ (3579) [Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2), Array(2)…]
+
+
+Worker创建：150ms左右

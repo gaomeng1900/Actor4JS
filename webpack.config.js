@@ -14,7 +14,8 @@ module.exports = {
     // @NOTE 使用绝对地址来避免潜在问题
     entry: {
         index: [path.resolve("./src/demo/index.js"), 'webpack-hot-middleware/client?reload=true'],
-        romeo: [path.resolve("./src/demo/romeo.js"), 'webpack-hot-middleware/client?reload=true']
+        romeo: [path.resolve("./src/demo/romeo.js"), 'webpack-hot-middleware/client?reload=true'],
+        benchmark: [path.resolve("./src/demo/benchmark.js"), 'webpack-hot-middleware/client?reload=true']
     },
     output: {
         path: path.resolve("./build"),
